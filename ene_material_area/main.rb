@@ -2,6 +2,8 @@ require "json"
 
 module Eneroth::MaterialAreaCounter
 
+  DEFAULT_MATERIAL_NAME = "Default Material"
+
   # Find an arbitrary vector that is not parallel to given vector.
   #
   # @param [Geom::Vector3d]
@@ -68,13 +70,26 @@ module Eneroth::MaterialAreaCounter
     areas
   end
 
+  # Get name of material or pre-defined default material name for nil.
+  #
+  # @param [Sketchup::Material, nil]
+  # @return [String]
+  def self.format_material_name(material)
+    material ? material.display_name : DEFAULT_MATERIAL_NAME
+  end
+
   # Count the areas of the materials in model and show to the user.
+  #
   # @return [void]
   def self.count_material_areas
 
     # REVIEW: What happens when user is not in the model root? That messes up
     # the Transformations and coordinates reported, doesn't it?
     areas = iterate_entities(Sketchup.active_model.entities)
+
+    areas = areas.map { |k, v|
+      [format_material_name(k), Sketchup.format_area(v)]
+    }.to_h
 
     # TODO: Format string nicely.
     UI.messagebox(

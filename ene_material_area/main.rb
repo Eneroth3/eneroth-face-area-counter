@@ -1,5 +1,3 @@
-require "json"
-
 module Eneroth::MaterialAreaCounter
 
   DEFAULT_MATERIAL_NAME = "Default Material"
@@ -33,7 +31,6 @@ module Eneroth::MaterialAreaCounter
       [format_material_name(k), Sketchup.format_area(v)]
     }.to_h
 
-    # TODO: Format string nicely.
     UI.messagebox(
       format_hash(areas),
       MB_MULTILINE,

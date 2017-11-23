@@ -70,6 +70,19 @@ module Eneroth::MaterialAreaCounter
     areas
   end
 
+  # Format hash.
+  #
+  # @param [Hash]
+  # @return [String]
+  def self.format_hash(hash)
+    key_length = hash.keys.map(&:length).max
+    value_length = hash.values.map(&:length).max
+
+    hash.map { |k, v|
+      "#{k.ljust(key_length)}: #{v.rjust(value_length)}"
+    }.join("\n")
+  end
+
   # Get name of material or pre-defined default material name for nil.
   #
   # @param [Sketchup::Material, nil]
@@ -93,7 +106,7 @@ module Eneroth::MaterialAreaCounter
 
     # TODO: Format string nicely.
     UI.messagebox(
-      areas.to_json,
+      format_hash(areas),
       MB_MULTILINE,
       EXTENSION.name
     )

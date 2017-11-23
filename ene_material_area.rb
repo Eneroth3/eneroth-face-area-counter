@@ -6,13 +6,7 @@
 #	  Menu: Plugins > Eneroth
 #
 # Edit material_prefixes.txt in the plugin directory to change what materials
-# ro list. 
-
-# ISSUES:
-#
-# Currently area is measured on untransformed definitions of groups and
-# components. If a group or component containing a material to b counted is
-# scaled the returned area will be wrong.
+# to list.
 
 # Load support files.
 require "sketchup.rb"

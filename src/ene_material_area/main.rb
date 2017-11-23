@@ -27,9 +27,9 @@ module Eneroth::MaterialAreaCounter
     # the Transformations and coordinates reported, doesn't it?
     areas = iterate_entities(Sketchup.active_model.entities)
 
-    areas = areas.map { |k, v|
+    areas = Hash[areas.map { |k, v|
       [format_material_name(k), Sketchup.format_area(v)]
-    }.to_h
+    }]
 
     UI.messagebox(
       format_hash(areas),

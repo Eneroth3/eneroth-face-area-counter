@@ -1,0 +1,1 @@
+["BOA","LOA","ÖVA","BYA","BTA","NTA","KA"]

@@ -68,54 +68,25 @@ module Eneroth::MaterialAreaCounter
     areas
   end
 
-
-
-
-  def self.csv(areas)
-
-    csv = ""
-    areas.each_pair do |m, a|
-
-      # Convert area to m^2 with 2 decimals.
-      a = a.to_m.to_m.to_f.round(2)
-
-      csv += "#{m ? m.display_name.inspect : "Default"},#{a}\r\n"
-
-    end
-
-    csv
-
-  end
-
-  def self.export
-
-    model = Sketchup.active_model
-
-    last_browsed_dir = Sketchup.read_default(PLUGIN_ID, "last_browsed_dir")
-    filename = "material areas.csv"
-
-    unless model.path.empty?
-      last_browsed_dir ||= File.dirname model.path
-      filename = File.basename(model.path, ".skp") + " material areas.csv"
-    end
-
-
-    savepath = UI.savepanel("Save Material List", last_browsed_dir, filename)
-    return unless savepath
-
-    last_browsed_dir = File.dirname savepath
-    Sketchup.write_default(PLUGIN_ID, "last_browsed_dir", last_browsed_dir.inspect)
+  # Count the areas of the materials in model and show to the user.
+  # @return [void]
+  def self.count_material_areas
 
     # REVIEW: What happens when user is not in the model root? That messes up
     # the Transformations and coordinates reported, doesn't it?
-    areas = iterate_entities(model.entities)
-    csv   = csv(areas)
+    areas = iterate_entities(Sketchup.active_model.entities)
 
-    IO.write(savepath, csv)
+    # TODO: Format string nicely.
+    UI.messagebox(
+      areas.to_json,
+      MB_MULTILINE,
+      EXTENSION.name
+    )
 
+    nil
   end
 
   menu = UI.menu("Plugins")
-  menu.add_item(EXTENSION.name) {export}
+  menu.add_item(EXTENSION.name) {count_material_areas}
 
 end

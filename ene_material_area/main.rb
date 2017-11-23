@@ -2,54 +2,74 @@ require "json"
 
 module Eneroth::MaterialAreaCounter
 
-  def self.count_material_areas(materials_to_count)
+  # Find an arbitrary vector that is not parallel to given vector.
+  #
+  # @param [Geom::Vector3d]
+  # @return [Geom::Vector3d]
+  def self.arbitrary_non_parallel_vector(vector)
+    vector.parallel?(Z_AXIS) ? X_AXIS : Z_AXIS
+  end
 
-    model = Sketchup.active_model
+  # Find an arbitrary vector that is perpendicular to given vector.
+  #
+  # @param [Geom::Vector3d]
+  # @return [Geom::Vector3d]
+  def self.arbitrary_perpendicular_vector(vector)
+    vector * arbitrary_non_parallel_vector(vector).normalize
+  end
 
-    # List areas indexed by Material objects.
-    areas = Hash[materials_to_count.map {|k| [k, 0.0]}]
+  # Determine the normal vector for a plane.
+  #
+  # @param [Array(Geom::Point3d, Geom::Vector3d), Array(Float, Float, Float, Float)]
+  # @return [Geom::Vector3d]
+  def self.plane_normal(plane)
+    return plane[1].normalize if plane.size == 2
+    a, b, c, _ = plane
 
-    recursive = lambda do |entities, tr|
+    Geom::Vector3d.new(a, b, c).normalize
+  end
 
-      entities.each do |entity|
-        if [Sketchup::Group, Sketchup::ComponentInstance].include?(entity.class)
+  # Compute the area scale factor from transformation at a plane.
+  #
+  # @param [Array(Geom::Point3d, Geom::Vector3d), Array(Float, Float, Float, Float)]
+  # @return [Float]
+  def self.scale_factor_in_plane(plane, transformation)
+    normal = plane_normal(plane)
+    plane_vector0 = arbitrary_perpendicular_vector(normal)
+    plane_vector1 = plane_vector0 * normal
 
-          recursive.call(entity.definition.entities, tr * entity.transformation)
+    (plane_vector0.transform(transformation) * plane_vector1.transform(transformation)).length.to_f
+  end
 
-        elsif entity.is_a?(Sketchup::Face)
-
-          material = entity.material
-          back_material = entity.back_material
-          next unless materials_to_count.include?(material) || materials_to_count.include?(back_material)
-
-          area = entity.area
-
-          # Find area scale factor by finding linear scale factor along 2
-          # arbitrary perpendicular axes in the face's plane.
-          vector0 = entity.edges.first.line[1].normalize
-          vector1 = vector0 * entity.normal
-          area_scale_factor = (vector0.transform(tr)*vector1.transform(tr)).length
-
-          area *= area_scale_factor
-
-          if materials_to_count.include?(material)
-            areas[material] += area
-          end
-
-          if materials_to_count.include?(back_material)
-            areas[back_material] += area
-          end
-
-        end
+  # Iterate Entities collection to sum up areas for each material.
+  #
+  # @param [Sketchup::Entities]
+  # @param [Geom::Transformation]
+  # @param [Sketchup::Material]
+  # @param [Hash] Areas indexed by Materials.
+  # @return [Hash] Areas indexed by Materials.
+  def self.iterate_entities(entities, transformation = IDENTITY, parent_material = nil, areas = Hash.new(0))
+    entities.each do |entity|
+      case entity
+      when Sketchup::Face
+        area = entity.area * scale_factor_in_plane(entity.plane, transformation)
+        areas[entity.material || parent_material] += area
+        areas[entity.back_material || parent_material] += area
+      when Sketchup::ComponentInstance, Sketchup::Group
+        iterate_entities(
+          entity.definition.entities,
+          transformation * entity.transformation,
+          entity.material || parent_material,
+          areas
+        )
       end
-
     end
 
-    recursive.call(model.entities, Geom::Transformation.new)
-
     areas
-
   end
+
+
+
 
   def self.csv(areas)
 
@@ -59,7 +79,7 @@ module Eneroth::MaterialAreaCounter
       # Convert area to m^2 with 2 decimals.
       a = a.to_m.to_m.to_f.round(2)
 
-      csv += "#{m.display_name.inspect},#{a}\r\n"
+      csv += "#{m ? m.display_name.inspect : "Default"},#{a}\r\n"
 
     end
 
@@ -70,7 +90,6 @@ module Eneroth::MaterialAreaCounter
   def self.export
 
     model = Sketchup.active_model
-    materials = model.materials
 
     last_browsed_dir = Sketchup.read_default(PLUGIN_ID, "last_browsed_dir")
     filename = "material areas.csv"
@@ -87,12 +106,9 @@ module Eneroth::MaterialAreaCounter
     last_browsed_dir = File.dirname savepath
     Sketchup.write_default(PLUGIN_ID, "last_browsed_dir", last_browsed_dir.inspect)
 
-    filename = File.join(PLUGIN_DIR, "material_prefixes.txt")
-    material_prefixes = JSON.parse(IO.read(filename))
-
-    materials_to_count = Set.new materials.select { |m| material_prefixes.any? { |p| m.display_name.start_with?(p) } }
-
-    areas = count_material_areas(materials_to_count)
+    # REVIEW: What happens when user is not in the model root? That messes up
+    # the Transformations and coordinates reported, doesn't it?
+    areas = iterate_entities(model.entities)
     csv   = csv(areas)
 
     IO.write(savepath, csv)

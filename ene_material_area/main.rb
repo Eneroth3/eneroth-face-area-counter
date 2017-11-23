@@ -1,10 +1,10 @@
-module EneSimplematerialArea
+require "json"
 
-  require "json"
+module Eneroth::MaterialAreaCounter
 
   def self.count_material_areas(materials_to_count)
-    
-    model     = Sketchup.active_model
+
+    model = Sketchup.active_model
 
     # List areas indexed by Material objects.
     areas = Hash[materials_to_count.map {|k| [k, 0.0]}]
@@ -12,18 +12,18 @@ module EneSimplematerialArea
     recursive = lambda do |entities, tr|
 
       entities.each do |entity|
-        if [Sketchup::Group, Sketchup::ComponentInstance].include? entity.class
-        
-          recursive.call entity.definition.entities, tr * entity.transformation
-          
-        elsif entity.is_a? Sketchup::Face
-        
+        if [Sketchup::Group, Sketchup::ComponentInstance].include?(entity.class)
+
+          recursive.call(entity.definition.entities, tr * entity.transformation)
+
+        elsif entity.is_a?(Sketchup::Face)
+
           material = entity.material
           back_material = entity.back_material
           next unless materials_to_count.include?(material) || materials_to_count.include?(back_material)
-          
+
           area = entity.area
-    
+
           # Find area scale factor by finding linear scale factor along 2
           # arbitrary perpendicular axes in the face's plane.
           vector0 = entity.edges.first.line[1].normalize
@@ -31,21 +31,21 @@ module EneSimplematerialArea
           area_scale_factor = (vector0.transform(tr)*vector1.transform(tr)).length
 
           area *= area_scale_factor
-                    
+
           if materials_to_count.include?(material)
             areas[material] += area
           end
-          
+
           if materials_to_count.include?(back_material)
             areas[back_material] += area
           end
-          
+
         end
       end
-      
+
     end
 
-    recursive.call model.entities, Geom::Transformation.new
+    recursive.call(model.entities, Geom::Transformation.new)
 
     areas
 
@@ -58,11 +58,11 @@ module EneSimplematerialArea
 
       # Convert area to m^2 with 2 decimals.
       a = a.to_m.to_m.to_f.round(2)
-      
+
       csv += "#{m.display_name.inspect},#{a}\r\n"
-      
+
     end
-    
+
     csv
 
   end
@@ -71,57 +71,35 @@ module EneSimplematerialArea
 
     model = Sketchup.active_model
     materials = model.materials
-    
-    last_browsed_dir = Sketchup.read_default ID, "last_browsed_dir"
+
+    last_browsed_dir = Sketchup.read_default(PLUGIN_ID, "last_browsed_dir")
     filename = "material areas.csv"
-    
+
     unless model.path.empty?
       last_browsed_dir ||= File.dirname model.path
       filename = File.basename(model.path, ".skp") + " material areas.csv"
     end
-    
-    
-    savepath = UI.savepanel "Save Material List", last_browsed_dir, filename
+
+
+    savepath = UI.savepanel("Save Material List", last_browsed_dir, filename)
     return unless savepath
-    
+
     last_browsed_dir = File.dirname savepath
-    Sketchup.write_default ID, "last_browsed_dir", last_browsed_dir.inspect
-        
+    Sketchup.write_default(PLUGIN_ID, "last_browsed_dir", last_browsed_dir.inspect)
+
     filename = File.join(PLUGIN_DIR, "material_prefixes.txt")
     material_prefixes = JSON.parse(IO.read(filename))
 
-    materials_to_count = Set.new materials.select { |m| material_prefixes.any? { |p| m.display_name.start_with? p } }
-    
-    areas = count_material_areas materials_to_count
-    csv   = csv areas
-    
-    IO.write savepath, csv
+    materials_to_count = Set.new materials.select { |m| material_prefixes.any? { |p| m.display_name.start_with?(p) } }
+
+    areas = count_material_areas(materials_to_count)
+    csv   = csv(areas)
+
+    IO.write(savepath, csv)
 
   end
-  
-  def self.live
-  
-    html = "<!DOCTYPE><html><head></head><body>Test</body></html>"
-    
-    dlg = UI::WebDialog.new(
-      NAME,
-      true,
-      "#{ID}_live",
-      500,
-      500,
-      100,
-      100
-    )
-    dlg.set_html html
-    dlg.show
-    
-  end
-  
-  #menu = UI.menu("Plugins").add_submenu NAME
-  #menu.add_item("Export CSV") {export}
-  #menu.add_item("Live Counter") {live}
-  
+
   menu = UI.menu("Plugins")
-  menu.add_item(NAME) {export}
+  menu.add_item(EXTENSION.name) {export}
 
 end

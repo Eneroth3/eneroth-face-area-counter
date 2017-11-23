@@ -1,35 +1,30 @@
-# Eneroth Simple Material Area Counter
-
-# Copyright Julia Christina Eneroth, eneroth3@gmail.com
-
-# Usage
-#	  Menu: Plugins > Eneroth
+#-------------------------------------------------------------------------------
 #
-# Edit material_prefixes.txt in the plugin directory to change what materials
-# to list.
+#    Author: Julia Christina Eneroth (eneroth3@gmail.com)
+# Copyright: Copyright (c) 2017
+#   License: MIT
+#
+#-------------------------------------------------------------------------------
 
-# Load support files.
 require "sketchup.rb"
 require "extensions.rb"
 
-module EneSimplematerialArea
+module Eneroth
+  module MaterialAreaCounter
 
-  AUTHOR      = "Julia Christina Eneroth"
-  CONTACT     = "#{AUTHOR} at eneroth3@gmail.com"
-  COPYRIGHT   = "#{AUTHOR} #{Time.now.year}"
-  DESCRIPTION = "Creates CSV file of areas (in m^2) of materials starting with defined prefixes."
-  ID          =  File.basename __FILE__, ".rb"
-  NAME        = "Eneroth Simple Material Area Counter"
-  VERSION     = "1.0.0"
+    PLUGIN_ID = File.basename(__FILE__, ".rb")
+    PLUGIN_DIR = File.join(File.dirname(__FILE__), PLUGIN_ID)
 
-  PLUGIN_ROOT = File.expand_path(File.dirname(__FILE__))
-  PLUGIN_DIR  = File.join PLUGIN_ROOT, ID
+    EXTENSION = SketchupExtension.new(
+      "Eneroth Material Area Counter",
+      File.join(PLUGIN_DIR, "main")
+    )
+    EXTENSION.creator     = "Julia Christina Eneroth"
+    EXTENSION.description =
+      "Creates CSV file of areas (in m^2) of materials starting with defined prefixes."
+    EXTENSION.version     = "1.0.0"
+    EXTENSION.copyright   = "#{EXTENSION.creator} 2017"
+    Sketchup.register_extension(EXTENSION, true)
 
-  ex = SketchupExtension.new(NAME, File.join(PLUGIN_DIR, "main"))
-  ex.description = DESCRIPTION
-  ex.version     = VERSION
-  ex.copyright   = COPYRIGHT
-  ex.creator     = AUTHOR
-  Sketchup.register_extension ex, true
-
+  end
 end

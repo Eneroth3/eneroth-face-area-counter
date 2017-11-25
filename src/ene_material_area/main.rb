@@ -2,7 +2,7 @@ module Eneroth::MaterialAreaCounter
 
   DEFAULT_MATERIAL_NAME = "Default Material"
 
-  # Find an arbitrary vector that is not parallel to given vector.
+  # Find an arbitrary unit vector that is not parallel to given vector.
   #
   # @param [Geom::Vector3d]
   # @return [Geom::Vector3d]
@@ -10,12 +10,12 @@ module Eneroth::MaterialAreaCounter
     vector.parallel?(Z_AXIS) ? X_AXIS : Z_AXIS
   end
 
-  # Find an arbitrary vector that is perpendicular to given vector.
+  # Find an arbitrary unit vector that is perpendicular to given vector.
   #
   # @param [Geom::Vector3d]
   # @return [Geom::Vector3d]
   def self.arbitrary_perpendicular_vector(vector)
-    vector * arbitrary_non_parallel_vector(vector).normalize
+    (vector * arbitrary_non_parallel_vector(vector)).normalize
   end
 
   # Count the areas of the materials in model and show to the user.
@@ -88,7 +88,7 @@ module Eneroth::MaterialAreaCounter
     areas
   end
 
-  # Determine the normal vector for a plane.
+  # Determine the unit normal vector for a plane.
   #
   # @param [Array(Geom::Point3d, Geom::Vector3d), Array(Float, Float, Float, Float)]
   # @return [Geom::Vector3d]

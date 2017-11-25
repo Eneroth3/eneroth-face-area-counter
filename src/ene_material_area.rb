@@ -22,7 +22,7 @@ module Eneroth
     EXTENSION.creator     = "Julia Christina Eneroth"
     EXTENSION.description =
       "Show total areas for materials."
-    EXTENSION.version     = "1.0.0"
+    EXTENSION.version     = "1.1.0"
     EXTENSION.copyright   = "#{EXTENSION.creator} 2017"
     Sketchup.register_extension(EXTENSION, true)
 

@@ -22,9 +22,6 @@ module Eneroth::MaterialAreaCounter
   #
   # @return [void]
   def self.count_material_areas
-
-    # REVIEW: What happens when user is not in the model root? That messes up
-    # the Transformations and coordinates reported, doesn't it?
     areas = iterate_entities(Sketchup.active_model.entities)
 
     areas = Hash[areas.map { |k, v|
